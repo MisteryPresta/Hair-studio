@@ -1,0 +1,6 @@
+{
+  "name": "Hair Designer Game",
+  "description": "A kid-friendly, touch-ready 2D drawing game where the player paints a doll’s hair using a brush and a color palette. The game is self-contained in a single HTML file and runs instantly in the browser, featuring masking, undo/redo, style guides, and image saving.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
