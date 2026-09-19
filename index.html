@@ -2,9 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Hair Designer">
+    <meta name="theme-color" content="#d7d3c8">
     <title>Hair Designer</title>
-    <!-- 
+    <!--
       Hair Designer - A single-file HTML5 Canvas Game
       Expertly crafted for Gemini by a world-class senior frontend React engineer.
       This file is self-contained with no external dependencies.
@@ -45,14 +50,19 @@
       * {
         box-sizing: border-box;
         -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
       }
 
       html, body {
         width: 100%;
         height: 100%;
+        height: 100dvh;
         margin: 0;
         padding: 0;
         overflow: hidden;
+        overscroll-behavior: none;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         background-color: var(--bg-color);
         color: var(--text-color);
@@ -327,7 +337,6 @@
       }
 
     </style>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body>
 
@@ -652,7 +661,7 @@ document.addEventListener('DOMContentLoaded', () => {
   dollImage.onerror = (e) => {
     console.error("Failed to load doll.png", e);
   };
-  dollImage.src = './doll.png';
+  dollImage.src = './public/doll.png';
 
   function drawDoll(style) {
     dollCtx.clearRect(0, 0, logicalWidth, logicalHeight);
@@ -1132,6 +1141,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 </script>
-<script type="module" src="/index.tsx"></script>
 </body>
 </html>
