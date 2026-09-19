@@ -340,6 +340,70 @@
         background: #e05daa;
       }
 
+      /* --- 6.5 Zoom Control --- */
+      #zoom-panel {
+        gap: 0.75rem;
+        flex-wrap: nowrap;
+      }
+
+      #zoom-icon {
+        width: 22px;
+        height: 22px;
+        flex: 0 0 auto;
+        color: var(--text-light);
+      }
+
+      #zoom-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        flex: 1 1 120px;
+        max-width: 360px;
+        height: 28px;
+        margin: 0;
+        background: transparent;
+        touch-action: none; /* Drag the slider without the page scrolling */
+      }
+
+      #zoom-slider::-webkit-slider-runnable-track {
+        height: 8px;
+        border-radius: 4px;
+        background: var(--ui-border);
+      }
+
+      #zoom-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 26px;
+        height: 26px;
+        margin-top: -9px;
+        border-radius: 50%;
+        background: var(--primary-accent);
+        border: 2px solid var(--ui-bg);
+        box-shadow: var(--shadow);
+      }
+
+      #zoom-slider::-moz-range-track {
+        height: 8px;
+        border-radius: 4px;
+        background: var(--ui-border);
+      }
+
+      #zoom-slider::-moz-range-thumb {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--primary-accent);
+        border: 2px solid var(--ui-bg);
+      }
+
+      #zoom-value {
+        flex: 0 0 auto;
+        min-width: 3.4rem;
+        text-align: center;
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-light);
+      }
+
       /* --- 7. Status & Misc --- */
       #status-strip {
         font-size: 0.8rem;
@@ -439,6 +503,12 @@
     </div>
     <div id="ui-container">
       <div id="status-strip">Select a tool and color to start!</div>
+      <div class="ui-panel" id="zoom-panel">
+        <svg id="zoom-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="20" y1="20" x2="16.65" y2="16.65"></line><line x1="8" y1="11" x2="14" y2="11"></line><line x1="11" y1="8" x2="11" y2="14"></line></svg>
+        <input type="range" id="zoom-slider" min="1" max="4" step="0.05" value="1" title="Zoom the doll in and out" aria-label="Zoom">
+        <span id="zoom-value">100%</span>
+        <button id="zoom-reset-btn" class="control-btn" title="Back to the whole doll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg><span>Fit</span></button>
+      </div>
       <div class="ui-panel">
           <!-- Tools -->
           <button id="tool-brush" class="tool-btn active" title="Brush"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg><span>Brush</span></button>
@@ -709,14 +779,93 @@ document.addEventListener('DOMContentLoaded', () => {
     displayCanvas.style.left = `${(rect.width - displayWidth) / 2}px`;
     displayCanvas.style.top = `${(rect.height - displayHeight) / 2}px`;
 
+    // These layers are always the fixed 1024x768 world, and assigning width or
+    // height wipes a canvas, so only size them the first time. Otherwise every
+    // resize or device rotation would erase the doll and the drawing with it.
     const canvases = [dollCanvas, hairCanvas, maskCanvas, guideCanvas, compositeCanvas];
     canvases.forEach(c => {
-      c.width = logicalWidth;
-      c.height = logicalHeight;
+      if (c.width !== logicalWidth || c.height !== logicalHeight) {
+        c.width = logicalWidth;
+        c.height = logicalHeight;
+      }
     });
 
     hairCtx.lineCap = 'round';
     hairCtx.lineJoin = 'round';
+
+    clampView();
+  }
+
+  // --- 2.5 Zoom / View ---
+  // Hair is always stored in the 1024x768 "world" the doll is drawn in, and the
+  // zoom is applied only when the composite is painted onto the visible canvas.
+  // That keeps every stroke locked to the doll at any zoom level.
+  const MIN_ZOOM = 1;
+  const MAX_ZOOM = 4;
+  const view = { zoom: 1, cx: logicalWidth / 2, cy: logicalHeight / 2 };
+
+  function getViewTransform() {
+    const dw = parseFloat(displayCanvas.style.width) || logicalWidth;
+    const dh = parseFloat(displayCanvas.style.height) || logicalHeight;
+    const fit = dw / logicalWidth; // display px per world px at 100%
+    let offsetX = dw / 2 - view.zoom * view.cx * fit;
+    let offsetY = dh / 2 - view.zoom * view.cy * fit;
+    // Keep the artwork covering the viewport so it can never be dragged away
+    offsetX = Math.min(0, Math.max(dw * (1 - view.zoom), offsetX));
+    offsetY = Math.min(0, Math.max(dh * (1 - view.zoom), offsetY));
+    return { dw, dh, fit, offsetX, offsetY };
+  }
+
+  function clampView() {
+    view.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, view.zoom));
+    const t = getViewTransform();
+    view.cx = (t.dw / 2 - t.offsetX) / (view.zoom * t.fit);
+    view.cy = (t.dh / 2 - t.offsetY) / (view.zoom * t.fit);
+  }
+
+  function displayToWorld(dx, dy) {
+    const t = getViewTransform();
+    return {
+      x: (dx - t.offsetX) / (view.zoom * t.fit),
+      y: (dy - t.offsetY) / (view.zoom * t.fit)
+    };
+  }
+
+  // Zooms so the given world point stays under the given point on screen.
+  function zoomAround(newZoom, world, displayX, displayY) {
+    view.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZoom));
+    const t = getViewTransform();
+    view.cx = world.x - (displayX - t.dw / 2) / (view.zoom * t.fit);
+    view.cy = world.y - (displayY - t.dh / 2) / (view.zoom * t.fit);
+    clampView();
+  }
+
+  function updateZoomDisplay() {
+    const slider = document.getElementById('zoom-slider');
+    // Leave the slider alone while it is the control being dragged.
+    if (slider && document.activeElement !== slider) {
+      slider.value = String(view.zoom);
+    }
+    const label = document.getElementById('zoom-value');
+    if (label) {
+      label.textContent = `${Math.round(view.zoom * 100)}%`;
+    }
+  }
+
+  function setZoom(newZoom) {
+    view.zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, newZoom));
+    clampView();
+    updateZoomDisplay();
+    redrawAll();
+  }
+
+  function resetView() {
+    view.zoom = 1;
+    view.cx = logicalWidth / 2;
+    view.cy = logicalHeight / 2;
+    clampView();
+    updateZoomDisplay();
+    redrawAll();
   }
 
   function setupColorPalette() {
@@ -838,11 +987,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Draw guides on top
     compositeCtx.drawImage(guideCanvas, 0, 0);
 
-    // 4. Scale and draw to visible canvas
-    const displayWidth = parseFloat(displayCanvas.style.width);
-    const displayHeight = parseFloat(displayCanvas.style.height);
-    displayCtx.clearRect(0, 0, displayWidth, displayHeight);
-    displayCtx.drawImage(compositeCanvas, 0, 0, displayWidth, displayHeight);
+    // 4. Scale and draw to visible canvas, through the current zoom
+    const t = getViewTransform();
+    displayCtx.clearRect(0, 0, t.dw, t.dh);
+    displayCtx.save();
+    displayCtx.translate(t.offsetX, t.offsetY);
+    displayCtx.scale(view.zoom, view.zoom);
+    displayCtx.drawImage(compositeCanvas, 0, 0, t.dw, t.dh);
+    displayCtx.restore();
   }
 
   function getActualBrushSize() {
@@ -962,9 +1114,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- 8. Stroke Engine ---
   function getPointerPosition(e) {
     const rect = displayCanvas.getBoundingClientRect();
-    const scaleX = logicalWidth / rect.width;
-    const scaleY = logicalHeight / rect.height;
-    
+
     let clientX, clientY;
     if (e.touches && e.touches.length > 0) {
       clientX = e.touches[0].clientX;
@@ -977,10 +1127,7 @@ document.addEventListener('DOMContentLoaded', () => {
       clientY = e.clientY;
     }
 
-    return {
-      x: (clientX - rect.left) * scaleX,
-      y: (clientY - rect.top) * scaleY
-    };
+    return displayToWorld(clientX - rect.left, clientY - rect.top);
   }
 
   function beginStroke(e) {
@@ -1332,6 +1479,59 @@ document.addEventListener('DOMContentLoaded', () => {
     redrawAll();
   }
 
+  // Throws away a stroke in progress, used when a second finger turns the
+  // gesture into a pinch so the pinch never leaves a stray mark behind.
+  function cancelStroke() {
+    if (!state.isDrawing) return;
+    state.isDrawing = false;
+    lastNormal = null;
+    activeStrands = [];
+    strokeDirection = null;
+    lastAngle = null;
+    smoothedAngularVelocity = 0;
+
+    const beforeStroke = state.history[state.history.length - 1];
+    hairCtx.globalCompositeOperation = 'source-over';
+    hairCtx.clearRect(0, 0, logicalWidth, logicalHeight);
+    if (beforeStroke) {
+      hairCtx.putImageData(beforeStroke, 0, 0);
+    }
+    redrawAll();
+  }
+
+  // --- 8.5 Pinch to Zoom ---
+  let pinch = null;
+
+  function pinchPoints(e) {
+    const rect = displayCanvas.getBoundingClientRect();
+    const a = e.touches[0];
+    const b = e.touches[1];
+    return {
+      dist: Math.max(1, Math.hypot(b.clientX - a.clientX, b.clientY - a.clientY)),
+      mx: (a.clientX + b.clientX) / 2 - rect.left,
+      my: (a.clientY + b.clientY) / 2 - rect.top
+    };
+  }
+
+  function startPinch(e) {
+    const p = pinchPoints(e);
+    pinch = {
+      startDist: p.dist,
+      startZoom: view.zoom,
+      world: displayToWorld(p.mx, p.my)
+    };
+  }
+
+  function updatePinch(e) {
+    if (!pinch) return;
+    const p = pinchPoints(e);
+    // Anchoring the starting world point to the moving midpoint gives pan for
+    // free: two fingers sliding together drag the doll around.
+    zoomAround(pinch.startZoom * (p.dist / pinch.startDist), pinch.world, p.mx, p.my);
+    updateZoomDisplay();
+    requestAnimationFrame(redrawAll);
+  }
+
   // --- 9. History Management (Undo/Redo) ---
   function pushHistory() {
     state.redoStack = []; // Clear redo stack on new action
@@ -1444,6 +1644,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resetDollBtn) {
       resetDollBtn.style.display = hasCustomDoll ? 'inline-flex' : 'none';
     }
+
+    // Zoom control
+    updateZoomDisplay();
 
     // Mute Toggle
     document.getElementById('mute-icon').style.display = state.isMuted ? 'none' : 'block';
@@ -1611,10 +1814,37 @@ document.addEventListener('DOMContentLoaded', () => {
     displayCanvas.addEventListener('mousedown', beginStroke);
     displayCanvas.addEventListener('mousemove', extendStroke);
     document.addEventListener('mouseup', endStroke);
-    displayCanvas.addEventListener('touchstart', beginStroke, { passive: false });
-    displayCanvas.addEventListener('touchmove', extendStroke, { passive: false });
-    document.addEventListener('touchend', endStroke);
-    document.addEventListener('touchcancel', endStroke);
+    displayCanvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length >= 2) {
+        if (e.cancelable) e.preventDefault();
+        cancelStroke();
+        startPinch(e);
+        return;
+      }
+      if (pinch) return;
+      beginStroke(e);
+    }, { passive: false });
+
+    displayCanvas.addEventListener('touchmove', (e) => {
+      if (pinch) {
+        if (e.cancelable) e.preventDefault();
+        if (e.touches.length >= 2) updatePinch(e);
+        return;
+      }
+      extendStroke(e);
+    }, { passive: false });
+
+    const finishTouch = (e) => {
+      if (pinch) {
+        // Stay in pinch mode until every finger is off, so the leftover finger
+        // does not start drawing mid-gesture.
+        if (!e.touches || e.touches.length === 0) pinch = null;
+        return;
+      }
+      endStroke(e);
+    };
+    document.addEventListener('touchend', finishTouch);
+    document.addEventListener('touchcancel', finishTouch);
     window.addEventListener('blur', endStroke);
 
     // Tool selection
@@ -1644,6 +1874,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('redo-btn').addEventListener('click', redo);
 
     // Controls
+    // Zoom
+    const zoomSlider = document.getElementById('zoom-slider');
+    if (zoomSlider) {
+      zoomSlider.addEventListener('input', () => setZoom(parseFloat(zoomSlider.value)));
+    }
+    const zoomResetBtn = document.getElementById('zoom-reset-btn');
+    if (zoomResetBtn) {
+      zoomResetBtn.addEventListener('click', () => {
+        resetView();
+        audioSystem.play('click');
+      });
+    }
+
     document.getElementById('clear-btn').addEventListener('click', clearHair);
     document.getElementById('save-btn').addEventListener('click', exportPNG);
     document.getElementById('mute-btn').addEventListener('click', audioSystem.toggleMute);
@@ -1756,7 +1999,7 @@ document.addEventListener('DOMContentLoaded', () => {
       onboardingStep++;
       if (onboardingStep === 1) {
         onboardingTitle.textContent = "Time to Paint!";
-        onboardingText.textContent = "Now use your finger or mouse to draw the doll's hair. Have fun!";
+        onboardingText.textContent = "Now use your finger or mouse to draw the doll's hair. Pinch with two fingers, or use the zoom bar, to get closer. Have fun!";
         onboardingNext.textContent = "Start Drawing!";
       } else {
         onboardingOverlay.classList.remove('visible');
