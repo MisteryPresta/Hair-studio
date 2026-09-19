@@ -1034,7 +1034,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (state.currentTool === 'eraser') {
       hairCtx.globalCompositeOperation = 'destination-out';
-      hairCtx.lineWidth = strokeWidth;
+      // Under destination-out the source alpha decides how much is removed,
+      // so the eraser needs its own opaque style instead of the faint
+      // strand color left behind by the last hair stroke.
+      hairCtx.strokeStyle = 'rgba(0, 0, 0, 1)';
+      // Strands fan out wider than the stroke core, so match that spread or
+      // one eraser pass leaves a fringe behind.
+      hairCtx.lineWidth = strokeWidth * 1.6;
       hairCtx.lineCap = 'round';
       hairCtx.lineJoin = 'round';
       hairCtx.beginPath();
@@ -1165,6 +1171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (state.currentTool === 'eraser') {
       hairCtx.globalCompositeOperation = 'destination-out';
+      hairCtx.strokeStyle = 'rgba(0, 0, 0, 1)';
       hairCtx.lineCap = 'round';
       hairCtx.lineJoin = 'round';
       for (let k = 0; k < steps; k++) {
@@ -1173,7 +1180,7 @@ document.addEventListener('DOMContentLoaded', () => {
         angle += angVel;
         const nextX = currX + Math.cos(angle) * stepDist;
         const nextY = currY + Math.sin(angle) * stepDist;
-        const ew = Math.max(0.2, startWidth * Math.pow(1 - prog, 1.8));
+        const ew = Math.max(0.2, startWidth * 1.6 * Math.pow(1 - prog, 1.8));
         hairCtx.lineWidth = ew;
         hairCtx.beginPath();
         hairCtx.moveTo(currX, currY);
