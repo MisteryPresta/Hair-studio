@@ -8,7 +8,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Hair Designer">
     <meta name="theme-color" content="#d7d3c8">
-    <title>Hair Designer</title>
+    <title>Hair Designer Game</title>
+    <meta name="description" content="A kid-friendly, touch-ready 2D drawing game where the player paints a doll’s hair using a brush and a color palette. The game is self-contained in a single HTML file and runs instantly in the browser, featuring masking, undo/redo, style guides, and image saving.">
+    <meta property="og:title" content="Hair Designer Game">
+    <meta property="og:description" content="A kid-friendly, touch-ready 2D drawing game where the player paints a doll’s hair using a brush and a color palette. The game is self-contained in a single HTML file and runs instantly in the browser, featuring masking, undo/redo, style guides, and image saving.">
     <!--
       Hair Designer - A single-file HTML5 Canvas Game
       Expertly crafted for Gemini by a world-class senior frontend React engineer.
@@ -19,7 +22,7 @@
       :root {
         --bg-color: #d7d3c8;
         --canvas-bg: #d7d3c8;
-        --primary-accent: #ff69b4; /* Hot Pink */
+        --primary-accent: #967156;
         --secondary-accent: #87ceeb; /* Sky Blue */
         --ui-bg: #c9c5ba;
         --ui-border: #d1d9e6;
@@ -35,7 +38,7 @@
       :root.dark {
         --bg-color: #292b37;
         --canvas-bg: #292b37;
-        --primary-accent: #ff7ebb; /* Hot Pink */
+        --primary-accent: #967156;
         --secondary-accent: #5db0db; /* Sky Blue */
         --ui-bg: #1a1c24;
         --ui-border: #2e3440;
@@ -90,6 +93,7 @@
         padding: 0 0.5rem;
       }
 
+      div#app-container > div#header-area > h1,
       h1 {
         font-size: 1.5rem;
         color: var(--primary-accent);
@@ -267,11 +271,15 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        background: var(--canvas-bg);
+        overflow: hidden;
+        position: relative;
       }
       
-      #brush-preview-dot {
-        border-radius: 50%;
-        transition: width 0.2s, height 0.2s, background-color 0.2s;
+      #brush-preview-canvas {
+        display: block;
+        width: 56px;
+        height: 56px;
       }
 
       /* --- 6. Onboarding & Modals --- */
@@ -381,8 +389,14 @@
           <button id="brush-medium" class="tool-btn active" title="Medium Brush"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="5"></circle></svg><span>Medium</span></button>
           <button id="brush-large" class="tool-btn" title="Large Brush"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="7"></circle></svg><span>Large</span></button>
           <div id="brush-preview-wrapper">
-            <div id="brush-preview"><div id="brush-preview-dot"></div></div>
+            <div id="brush-preview" title="Live Hair Texture Brush Preview"><canvas id="brush-preview-canvas" width="56" height="56"></canvas></div>
           </div>
+          <div class="divider"></div>
+          <!-- Hair Textures -->
+          <button id="texture-strands" class="tool-btn active" title="Fine Hair Strands Texture"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 3c1 6-1 12 0 18M9 3c1.5 6-.5 12 1 18M13 3c1 6-1 12 0 18M17 3c1.5 6-.5 12 1 18M21 3c1 6-1 12 0 18"/></svg><span>Strands</span></button>
+          <button id="texture-silky" class="tool-btn" title="Silky Lustrous Hair Lock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3c3 5 4 11 0 18M12 3c3 5 4 11 0 18M18 3c3 5 4 11 0 18"/></svg><span>Silky</span></button>
+          <button id="texture-wavy" class="tool-btn" title="Wavy Hair Flow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 3c2 4-2 7 0 10s-2 6 0 8M12 3c2 4-2 7 0 10s-2 6 0 8M19 3c2 4-2 7 0 10s-2 6 0 8"/></svg><span>Wavy</span></button>
+          <button id="texture-single" class="tool-btn" title="Fine Single Hair Strand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3c1.5 6-1.5 12 0 18"/></svg><span>Detail</span></button>
           <div class="divider"></div>
           <!-- Undo/Redo -->
           <button id="undo-btn" class="control-btn" title="Undo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 9H8a5 5 0 0 0-5 5v0a5 5 0 0 0 5 5h10"></path><polyline points="12 13 8 9 12 5"></polyline></svg><span>Undo</span></button>
@@ -392,15 +406,20 @@
         <div id="color-palette"></div>
       </div>
        <div class="ui-panel">
-          <!-- Style Guides -->
-          <button id="guide-straight" class="tool-btn" title="Try a straight hair style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"></path></svg><span>Straight</span></button>
-          <button id="guide-curly" class="tool-btn" title="Try a curly hair style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 4H3M21 8H3M21 12H3M21 16H3"></path><path d="M4 20s2-4 4-4 4 4 4 4 4-4 4-4"></path></svg><span>Curly</span></button>
-          <button id="guide-ponytail" class="tool-btn" title="Try a ponytail style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3s-4 4-4 9 4 9 4 9M9 3s4 4 4 9-4 9-4 9"></path><path d="M16 12h-7"></path><path d="M19 12c-2 1.5-2 4.5 0 6s2-4.5 0-6z"></path></svg><span>Ponytail</span></button>
+          <!-- Hair Types (Straight, Wavy, Curly, Kinky) -->
+          <button id="guide-straight" class="tool-btn" title="Straight Hair (Type 1)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 3v18M12 3v18M17 3v18"/></svg><span>Straight</span></button>
+          <button id="guide-wavy" class="tool-btn" title="Wavy Hair (Type 2 - Loose S-Waves)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3c2.5 3-2.5 6 0 9s2.5 6 0 9M12 3c2.5 3-2.5 6 0 9s2.5 6 0 9M18 3c2.5 3-2.5 6 0 9s2.5 6 0 9"/></svg><span>Wavy</span></button>
+          <button id="guide-curly" class="tool-btn" title="Curly Hair (Type 3 - Spiral Ringlets)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3c3 1.5 3.5 4.5 1 6s-4 1.5-2 4.5 3 2 1 4.5M12 3c3 1.5 3.5 4.5 1 6s-4 1.5-2 4.5 3 2 1 4.5M18 3c3 1.5 3.5 4.5 1 6s-4 1.5-2 4.5 3 2 1 4.5"/></svg><span>Curly</span></button>
+          <button id="guide-kinky" class="tool-btn" title="Kinky Hair (Type 4 - Tight Z-Pattern Coils)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5M12 3l3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5M18 3l3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5"/></svg><span>Kinky</span></button>
           <div class="divider"></div>
           <!-- Mask Toggle -->
           <button id="mask-toggle" class="control-btn active" title="Toggle hair mask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"></path></svg><span>Hair Only</span></button>
           <!-- Doll Style Toggle -->
           <button id="doll-toggle" class="control-btn" title="Change doll style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M8 12h8"></path><path d="M12 8v8"></path></svg><span>Style A</span></button>
+          <!-- Upload Doll Button -->
+          <button id="upload-doll-btn" class="control-btn" title="Upload your own custom doll image from your device"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg><span>Upload Doll</span></button>
+          <input type="file" id="doll-file-input" accept="image/*" style="display:none;" />
+          <button id="reset-doll-btn" class="control-btn" style="display:none;" title="Reset back to default doll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg><span>Default Doll</span></button>
           <div class="divider"></div>
           <!-- Global Controls -->
           <button id="clear-btn" class="control-btn" title="Clear Hair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg><span>Clear</span></button>
@@ -429,6 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentTool: 'brush', // 'brush', 'eraser'
     currentColor: '#6d4c41', // Chestnut
     brushSize: 16, // medium
+    hairTexture: 'strands', // 'strands', 'silky', 'wavy', 'single'
     isDrawing: false,
     maskMode: true, // true: 'Hair Only', false: 'Free Draw'
     dollStyle: 'A', // 'A' or 'B'
@@ -436,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
     history: [],
     redoStack: [],
     maxHistory: 20,
-    currentGuide: null, // 'straight', 'curly', 'ponytail'
+    currentGuide: 'straight', // default to 'straight' at start of game
     theme: savedTheme
   };
 
@@ -471,6 +491,11 @@ document.addEventListener('DOMContentLoaded', () => {
   let lastPoint = { x: 0, y: 0 };
   let lastVelocity = 0;
   let lastWidth = 0;
+  let lastNormal = null;
+  let strokeDirection = null;
+  let lastAngle = null;
+  let smoothedAngularVelocity = 0;
+  let activeStrands = [];
   const STROKE_SMOOTHING = 0.5;
 
   // --- 3. Asset Definitions (Programmatic) ---
@@ -589,6 +614,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     makeHairMask(state.dollStyle);
     drawDoll(state.dollStyle);
+    drawGuide(state.currentGuide);
     updateUI();
     redrawAll();
     
@@ -659,9 +685,17 @@ document.addEventListener('DOMContentLoaded', () => {
     redrawAll();
   };
   dollImage.onerror = (e) => {
-    console.error("Failed to load doll.png", e);
+    console.error("Failed to load doll.png from " + dollImage.src, e);
+    if (dollImage.src.indexOf('/doll.png') === -1) {
+      dollImage.src = '/doll.png';
+    }
   };
-  dollImage.src = './public/doll.png';
+  const savedCustomDoll = localStorage.getItem('custom_doll_image');
+  if (savedCustomDoll) {
+    dollImage.src = savedCustomDoll;
+  } else {
+    dollImage.src = './doll.png';
+  }
 
   function drawDoll(style) {
     dollCtx.clearRect(0, 0, logicalWidth, logicalHeight);
@@ -678,12 +712,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const drawX = (logicalWidth - drawWidth) / 2;
       const drawY = (logicalHeight - drawHeight) / 2;
 
-      const isDark = document.documentElement.classList.contains('dark');
-      
       dollCtx.save();
-      if (!isDark) {
-         dollCtx.filter = 'invert(100%)';
-      }
       dollCtx.drawImage(dollImage, drawX, drawY, drawWidth, drawHeight);
       dollCtx.restore();
     }
@@ -696,9 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const w = logicalWidth;
     const h = logicalHeight;
     const centerX = w / 2;
-    const headY = h / 2 - 120; // Match drawDoll
-    const headRadiusX = 100;   // Match drawDoll
-    const headRadiusY = 135;   // Match drawDoll
+    const cy = 290;
 
     // 1. Draw a very large rectangle covering the entire potential hair area
     maskCtx.fillRect(0, 0, w, h);
@@ -706,17 +733,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Use destination-out to erase the face area from the mask
     maskCtx.globalCompositeOperation = 'destination-out';
     
-    const cx = centerX;
-    const cy = headY + 20;
-
     maskCtx.beginPath();
-    maskCtx.moveTo(cx, cy - 90);
-    maskCtx.bezierCurveTo(cx + 30, cy - 90, cx + 70, cy - 70, cx + 80, cy - 30);
-    maskCtx.bezierCurveTo(cx + 85, cy + 10, cx + 85, cy + 60, cx + 45, cy + 105);
-    maskCtx.quadraticCurveTo(cx, cy + 130, cx - 45, cy + 105);
-    maskCtx.bezierCurveTo(cx - 85, cy + 60, cx - 85, cy + 10, cx - 80, cy - 30);
-    maskCtx.bezierCurveTo(cx - 70, cy - 70, cx - 30, cy - 90, cx, cy - 90);
-    maskCtx.closePath();
+    maskCtx.ellipse(centerX, cy, 125, 160, 0, 0, Math.PI * 2);
     maskCtx.fill();
     
     // 3. Reset composite operation for future drawing
@@ -768,10 +786,117 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function getActualBrushSize() {
-    if (state.currentGuide === 'curly') {
-      return state.brushSize / 2;
+    if (state.currentGuide === 'curly' || state.currentGuide === 'kinky') {
+      return state.brushSize * 0.8;
     }
     return state.brushSize;
+  }
+
+  // --- 7.5 Hair Strand & Texture Engine Helpers ---
+  function hexToRgb(hex) {
+    let c = hex.replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    const num = parseInt(c, 16);
+    return {
+      r: (num >> 16) & 255,
+      g: (num >> 8) & 255,
+      b: num & 255
+    };
+  }
+
+  function adjustTone(rgb, factor) {
+    if (factor > 0) {
+      return {
+        r: Math.min(255, Math.round(rgb.r + (255 - rgb.r) * factor)),
+        g: Math.min(255, Math.round(rgb.g + (255 - rgb.g) * factor)),
+        b: Math.min(255, Math.round(rgb.b + (255 - rgb.b) * factor))
+      };
+    } else {
+      const f = 1 + factor;
+      return {
+        r: Math.max(0, Math.round(rgb.r * f)),
+        g: Math.max(0, Math.round(rgb.g * f)),
+        b: Math.max(0, Math.round(rgb.b * f))
+      };
+    }
+  }
+
+  function generateStrands(brushSize, textureType, hexColor) {
+    const baseRgb = hexToRgb(hexColor);
+    if (textureType === 'single') {
+      return [{
+        offset: 0,
+        width: Math.max(1.2, Math.min(2.5, brushSize / 8)),
+        color: `rgba(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b}, 0.9)`,
+        rgb: baseRgb,
+        baseAlpha: 0.9,
+        taperEnd: 1.0,
+        freq: 0.1,
+        amp: 0.5,
+        phase: 0
+      }];
+    }
+
+    let count = Math.max(8, Math.round(brushSize * 0.9));
+    if (textureType === 'silky') count = Math.max(12, Math.round(brushSize * 1.2));
+    if (textureType === 'wavy') count = Math.max(7, Math.round(brushSize * 0.8));
+
+    const strands = [];
+    for (let i = 0; i < count; i++) {
+      const u = (i / (count - 1 || 1)) - 0.5;
+      const jitter = (Math.random() - 0.5) * (0.6 / count);
+      const offset = Math.max(-0.48, Math.min(0.48, u + jitter));
+
+      let factor = 0;
+      let alpha = 0.78;
+      const roll = Math.random();
+      if (roll < 0.28) {
+        factor = 0.18 + Math.random() * 0.22; // Highlight shine strand
+        alpha = 0.85;
+      } else if (roll < 0.54) {
+        factor = -0.18 - Math.random() * 0.18; // Shadow depth strand
+        alpha = 0.88;
+      } else if (roll < 0.64) {
+        factor = 0.38; // Specular luster strand
+        alpha = 0.75;
+      } else {
+        factor = (Math.random() - 0.5) * 0.1; // Base strand with subtle natural variation
+        alpha = 0.82;
+      }
+
+      if (textureType === 'silky') {
+        alpha *= 0.85;
+      }
+
+      const c = adjustTone(baseRgb, factor);
+      const colorStr = `rgba(${c.r}, ${c.g}, ${c.b}, ${alpha.toFixed(2)})`;
+
+      const strandWidth = textureType === 'silky'
+        ? 1.0 + Math.random() * 0.6
+        : (textureType === 'wavy' ? 1.3 + Math.random() * 0.8 : 0.9 + Math.random() * 0.9);
+
+      const freq = textureType === 'wavy' ? 0.08 + Math.random() * 0.04 : 0.15 + Math.random() * 0.1;
+      const amp = textureType === 'wavy' ? (3.5 + Math.random() * 3.5) : (0.6 + Math.random() * 0.8);
+      const phase = Math.random() * Math.PI * 2;
+
+      // Feathered tips: outer and random strands end in staggered natural sequence
+      const taperEnd = 0.78 + Math.random() * 0.22;
+
+      strands.push({
+        offset,
+        width: strandWidth,
+        color: colorStr,
+        rgb: c,
+        baseAlpha: alpha,
+        taperEnd,
+        freq,
+        amp,
+        phase
+      });
+    }
+
+    strands.sort((a, b) => a.color.localeCompare(b.color));
+    return strands;
   }
 
   // --- 8. Stroke Engine ---
@@ -806,8 +931,13 @@ document.addEventListener('DOMContentLoaded', () => {
     state.isDrawing = true;
     lastPoint = getPointerPosition(e);
     lastVelocity = 0;
-    lastWidth = getActualBrushSize();
+    lastWidth = getActualBrushSize() * 0.4; // Natural tapered start
+    lastNormal = null;
+    strokeDirection = null;
+    lastAngle = null;
+    smoothedAngularVelocity = 0;
     state.strokeDistance = 0;
+    activeStrands = generateStrands(getActualBrushSize(), state.hairTexture, state.currentColor);
     audioSystem.init(); // Init audio on first interaction
   }
 
@@ -824,52 +954,126 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (dist === 0) return;
 
+    // Track heading angle and smooth angular momentum for organic curved endings
+    const currentAngle = Math.atan2(dy, dx);
+    if (lastAngle !== null) {
+      let dAngle = currentAngle - lastAngle;
+      while (dAngle > Math.PI) dAngle -= Math.PI * 2;
+      while (dAngle < -Math.PI) dAngle += Math.PI * 2;
+      smoothedAngularVelocity = smoothedAngularVelocity * 0.65 + dAngle * 0.35;
+    }
+    lastAngle = currentAngle;
+    strokeDirection = { dx: dx / dist, dy: dy / dist };
+
     const velocity = dist * STROKE_SMOOTHING + lastVelocity * (1 - STROKE_SMOOTHING);
-    
     const actualSize = getActualBrushSize();
     
-    // Pressure simulation: faster speed = thinner line
-    const targetWidth = Math.max(actualSize / (1 + velocity / 10), actualSize / 4);
-    const strokeWidth = lastWidth * 0.5 + targetWidth * 0.5;
+    // Dynamic pressure simulation: faster speed = thinner tapered hair lock
+    const targetWidth = Math.max(actualSize / (1 + velocity / 14), actualSize * 0.35);
+    const strokeWidth = lastWidth * 0.4 + targetWidth * 0.6;
 
-    hairCtx.globalCompositeOperation = state.currentTool === 'eraser' ? 'destination-out' : 'source-over';
-    hairCtx.strokeStyle = state.currentColor;
-    hairCtx.lineWidth = strokeWidth;
-    hairCtx.lineCap = 'round';
-    hairCtx.lineJoin = 'round';
-    
-    hairCtx.beginPath();
-    
-    if (state.currentGuide === 'curly' && state.currentTool !== 'eraser') {
-      const curlRadius = Math.max(10, actualSize * 1.5); 
-      const curlFrequency = 0.2;
-      
-      const steps = Math.max(1, Math.floor(dist / 2));
-      
-      const startAngle = state.strokeDistance * curlFrequency;
-      const startOffsetX = Math.cos(startAngle) * curlRadius;
-      const startOffsetY = Math.sin(startAngle) * curlRadius;
-      hairCtx.moveTo(lastPoint.x + startOffsetX, lastPoint.y + startOffsetY);
-      
-      for (let i = 1; i <= steps; i++) {
-        const t = i / steps;
-        const px = lastPoint.x + dx * t;
-        const py = lastPoint.y + dy * t;
-        
-        const currentDist = state.strokeDistance + dist * t;
-        const angle = currentDist * curlFrequency;
-        
-        const offsetX = Math.cos(angle) * curlRadius;
-        const offsetY = Math.sin(angle) * curlRadius;
-        
-        hairCtx.lineTo(px + offsetX, py + offsetY);
-      }
-    } else {
+    if (state.currentTool === 'eraser') {
+      hairCtx.globalCompositeOperation = 'destination-out';
+      hairCtx.lineWidth = strokeWidth;
+      hairCtx.lineCap = 'round';
+      hairCtx.lineJoin = 'round';
+      hairCtx.beginPath();
       hairCtx.moveTo(lastPoint.x, lastPoint.y);
       hairCtx.lineTo(currentPoint.x, currentPoint.y);
+      hairCtx.stroke();
+    } else {
+      hairCtx.globalCompositeOperation = 'source-over';
+      hairCtx.lineCap = 'round';
+      hairCtx.lineJoin = 'round';
+
+      // Unit tangent & normal vectors
+      const tx = dx / dist;
+      const ty = dy / dist;
+      const rawNx = -ty;
+      const rawNy = tx;
+
+      if (!lastNormal) {
+        lastNormal = { nx: rawNx, ny: rawNy };
+      }
+
+      // Smooth normal vector across segments to eliminate angular bends
+      const currNormal = {
+        nx: lastNormal.nx * 0.3 + rawNx * 0.7,
+        ny: lastNormal.ny * 0.3 + rawNy * 0.7
+      };
+      const nLen = Math.hypot(currNormal.nx, currNormal.ny) || 1;
+      currNormal.nx /= nLen;
+      currNormal.ny /= nLen;
+
+      // Soft underlying lock volume for realistic hair body
+      if (state.hairTexture !== 'single') {
+        const baseRgb = hexToRgb(state.currentColor);
+        const coreAlpha = state.hairTexture === 'silky' ? 0.28 : 0.16;
+        hairCtx.strokeStyle = `rgba(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b}, ${coreAlpha})`;
+        hairCtx.lineWidth = strokeWidth * 0.7;
+        hairCtx.beginPath();
+        hairCtx.moveTo(lastPoint.x, lastPoint.y);
+        hairCtx.lineTo(currentPoint.x, currentPoint.y);
+        hairCtx.stroke();
+      }
+
+      // Render individual hair fiber strands with tone variation, highlights, and organic flow
+      const steps = Math.max(1, Math.min(5, Math.ceil(dist / 4)));
+
+      for (let i = 0; i < activeStrands.length; i++) {
+        const strand = activeStrands[i];
+        hairCtx.strokeStyle = strand.color;
+        hairCtx.lineWidth = strand.width;
+        hairCtx.beginPath();
+
+        for (let s = 0; s <= steps; s++) {
+          const t = s / steps;
+          const px = lastPoint.x + dx * t;
+          const py = lastPoint.y + dy * t;
+          const w = lastWidth + (strokeWidth - lastWidth) * t;
+          const d = state.strokeDistance + dist * t;
+
+          const inx = lastNormal.nx + (currNormal.nx - lastNormal.nx) * t;
+          const iny = lastNormal.ny + (currNormal.ny - lastNormal.ny) * t;
+
+          let wobble = Math.sin(d * strand.freq + strand.phase) * strand.amp;
+          
+          if (state.currentGuide === 'straight') {
+            // Type 1 (Straight): Sleek, uniform alignment with zero wave
+            wobble = 0;
+          } else if (state.currentGuide === 'wavy') {
+            // Type 2 (Wavy): Flowing rhythmic S-waves (2a/2b/2c)
+            const waveAmp = Math.max(7, strokeWidth * 0.9);
+            const waveAngle = d * 0.07;
+            wobble += Math.sin(waveAngle) * waveAmp;
+          } else if (state.currentGuide === 'curly') {
+            // Type 3 (Curly): Spiral ringlet loops and springy corkscrews (3a/3b/3c)
+            const curlRadius = Math.max(8, strokeWidth * 1.15);
+            const curlAngle = d * 0.18;
+            wobble += Math.cos(curlAngle) * curlRadius;
+          } else if (state.currentGuide === 'kinky') {
+            // Type 4 (Kinky): High-density zigzag Z-pattern crinkles and micro-coils (4a/4b/4c)
+            const kinkyAmp = Math.max(5, strokeWidth * 0.7);
+            const kinkyFreq = 0.38;
+            const phase = (d * kinkyFreq) % (Math.PI * 2);
+            const zigzag = (Math.asin(Math.sin(phase)) / (Math.PI / 2)); // sharp triangular wave -1 to +1
+            wobble += zigzag * kinkyAmp;
+          }
+
+          const sx = px + inx * (strand.offset * w + wobble);
+          const sy = py + iny * (strand.offset * w + wobble);
+
+          if (s === 0) {
+            hairCtx.moveTo(sx, sy);
+          } else {
+            hairCtx.lineTo(sx, sy);
+          }
+        }
+        hairCtx.stroke();
+      }
+
+      lastNormal = currNormal;
     }
-    
-    hairCtx.stroke();
     
     lastPoint = currentPoint;
     lastVelocity = velocity;
@@ -879,10 +1083,186 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(redrawAll);
   }
 
+  // Finishes every hair brush stroke with an organic, gradual taper down to almost nothing
+  function finishHairStrokeTaper() {
+    if (!lastPoint) return;
+
+    // Trajectory angle and smooth curvature dissipation
+    let angle = lastAngle !== null ? lastAngle : Math.PI / 2;
+    let angVel = Math.max(-0.06, Math.min(0.06, smoothedAngularVelocity || 0));
+
+    const actualSize = getActualBrushSize();
+    const startWidth = Math.max(lastWidth || 0, actualSize * 0.45);
+
+    // Natural taper length proportional to brush width and movement speed
+    const taperLength = Math.max(22, Math.min(68, startWidth * 1.6 + (lastVelocity || 0) * 1.3));
+    const steps = 22;
+    const stepDist = taperLength / steps;
+
+    let currX = lastPoint.x;
+    let currY = lastPoint.y;
+    let prevNormal = lastNormal;
+
+    if (state.currentTool === 'eraser') {
+      hairCtx.globalCompositeOperation = 'destination-out';
+      hairCtx.lineCap = 'round';
+      hairCtx.lineJoin = 'round';
+      for (let k = 0; k < steps; k++) {
+        const prog = k / steps;
+        angVel *= 0.94;
+        angle += angVel;
+        const nextX = currX + Math.cos(angle) * stepDist;
+        const nextY = currY + Math.sin(angle) * stepDist;
+        const ew = Math.max(0.2, startWidth * Math.pow(1 - prog, 1.8));
+        hairCtx.lineWidth = ew;
+        hairCtx.beginPath();
+        hairCtx.moveTo(currX, currY);
+        hairCtx.lineTo(nextX, nextY);
+        hairCtx.stroke();
+        currX = nextX;
+        currY = nextY;
+      }
+      lastPoint = { x: currX, y: currY };
+      state.strokeDistance += taperLength;
+      return;
+    }
+
+    hairCtx.globalCompositeOperation = 'source-over';
+    hairCtx.lineCap = 'round';
+    hairCtx.lineJoin = 'round';
+
+    const strands = activeStrands.length > 0 ? activeStrands : generateStrands(actualSize, state.hairTexture, state.currentColor);
+
+    for (let k = 0; k < steps; k++) {
+      const pStart = k / steps;
+      const pEnd = (k + 1) / steps;
+
+      angVel *= 0.93; // Gracefully relax curvature
+      angle += angVel;
+
+      const nextX = currX + Math.cos(angle) * stepDist;
+      const nextY = currY + Math.sin(angle) * stepDist;
+
+      const tx = Math.cos(angle);
+      const ty = Math.sin(angle);
+      const rawNx = -ty;
+      const rawNy = tx;
+
+      const currNormal = prevNormal ? {
+        nx: prevNormal.nx * 0.35 + rawNx * 0.65,
+        ny: prevNormal.ny * 0.35 + rawNy * 0.65
+      } : { nx: rawNx, ny: rawNy };
+      const nLen = Math.hypot(currNormal.nx, currNormal.ny) || 1;
+      currNormal.nx /= nLen;
+      currNormal.ny /= nLen;
+
+      // Concave width reduction finishing down to zero
+      const w1 = startWidth * Math.pow(1 - pStart, 1.6);
+      const w2 = startWidth * Math.pow(1 - pEnd, 1.6);
+
+      // Core lock body volume fades out completely to nothing
+      if (state.hairTexture !== 'single') {
+        const baseRgb = hexToRgb(state.currentColor);
+        const coreAlphaBase = state.hairTexture === 'silky' ? 0.28 : 0.16;
+        const coreAlpha = coreAlphaBase * Math.pow(1 - pEnd, 2.2);
+        if (coreAlpha > 0.005 && w2 > 0.3) {
+          hairCtx.strokeStyle = `rgba(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b}, ${coreAlpha.toFixed(3)})`;
+          hairCtx.lineWidth = Math.max(0.1, w1 * 0.7);
+          hairCtx.beginPath();
+          hairCtx.moveTo(currX, currY);
+          hairCtx.lineTo(nextX, nextY);
+          hairCtx.stroke();
+        }
+      }
+
+      // Render tapered individual hair strands ending gradually to almost nothing
+      const d1 = state.strokeDistance + k * stepDist;
+      const d2 = state.strokeDistance + (k + 1) * stepDist;
+
+      for (let i = 0; i < strands.length; i++) {
+        const strand = strands[i];
+        const tEnd = strand.taperEnd || 0.92;
+
+        if (pStart >= tEnd) {
+          // This strand has finished in natural feathering sequence
+          continue;
+        }
+
+        const sp1 = pStart / tEnd;
+        const sp2 = Math.min(1, pEnd / tEnd);
+
+        // Alpha fades gradually to nothing (0)
+        const alpha = (strand.baseAlpha || 0.8) * Math.pow(1 - sp2, 1.7);
+        if (alpha < 0.008) continue;
+
+        // Strand width tapers down to microscopic hair tip
+        const strandW = Math.max(0.1, strand.width * Math.pow(1 - sp1, 1.3));
+
+        const rgb = strand.rgb || hexToRgb(state.currentColor);
+        hairCtx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha.toFixed(3)})`;
+        hairCtx.lineWidth = strandW;
+
+        // Strands converge inwards towards the tip
+        const conv1 = Math.pow(1 - sp1, 1.25);
+        const conv2 = Math.pow(1 - sp2, 1.25);
+
+        let wobble1 = Math.sin(d1 * strand.freq + strand.phase) * strand.amp * (1 - sp1);
+        let wobble2 = Math.sin(d2 * strand.freq + strand.phase) * strand.amp * (1 - sp2);
+
+        if (state.currentGuide === 'straight') {
+          wobble1 = 0;
+          wobble2 = 0;
+        } else if (state.currentGuide === 'wavy') {
+          const waveAmp = Math.max(7, startWidth * 0.9) * (1 - sp1);
+          wobble1 += Math.sin(d1 * 0.07) * waveAmp;
+          wobble2 += Math.sin(d2 * 0.07) * (waveAmp * (1 - sp2));
+        } else if (state.currentGuide === 'curly') {
+          const curlRadius = Math.max(8, startWidth * 1.15) * (1 - sp1);
+          wobble1 += Math.cos(d1 * 0.18) * curlRadius;
+          wobble2 += Math.cos(d2 * 0.18) * (curlRadius * (1 - sp2));
+        } else if (state.currentGuide === 'kinky') {
+          const kinkyAmp = Math.max(5, startWidth * 0.7) * (1 - sp1);
+          const phase1 = (d1 * 0.38) % (Math.PI * 2);
+          const phase2 = (d2 * 0.38) % (Math.PI * 2);
+          const zigzag1 = (Math.asin(Math.sin(phase1)) / (Math.PI / 2));
+          const zigzag2 = (Math.asin(Math.sin(phase2)) / (Math.PI / 2));
+          wobble1 += zigzag1 * kinkyAmp;
+          wobble2 += zigzag2 * (kinkyAmp * (1 - sp2));
+        }
+
+        const sx1 = currX + currNormal.nx * (strand.offset * w1 * conv1 + wobble1);
+        const sy1 = currY + currNormal.ny * (strand.offset * w1 * conv1 + wobble1);
+        const sx2 = nextX + currNormal.nx * (strand.offset * w2 * conv2 + wobble2);
+        const sy2 = nextY + currNormal.ny * (strand.offset * w2 * conv2 + wobble2);
+
+        hairCtx.beginPath();
+        hairCtx.moveTo(sx1, sy1);
+        hairCtx.lineTo(sx2, sy2);
+        hairCtx.stroke();
+      }
+
+      currX = nextX;
+      currY = nextY;
+      prevNormal = currNormal;
+    }
+
+    lastPoint = { x: currX, y: currY };
+    state.strokeDistance += taperLength;
+  }
+
   function endStroke() {
     if (!state.isDrawing) return;
+
+    finishHairStrokeTaper();
+
     state.isDrawing = false;
+    lastNormal = null;
+    activeStrands = [];
+    strokeDirection = null;
+    lastAngle = null;
+    smoothedAngularVelocity = 0;
     pushHistory();
+    redrawAll();
   }
 
   // --- 9. History Management (Undo/Redo) ---
@@ -946,18 +1326,24 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('brush-medium').classList.toggle('active', state.brushSize === brushSizes.medium);
     document.getElementById('brush-large').classList.toggle('active', state.brushSize === brushSizes.large);
 
-    // Style Guides
-    document.getElementById('guide-straight').classList.toggle('active', state.currentGuide === 'straight');
-    document.getElementById('guide-curly').classList.toggle('active', state.currentGuide === 'curly');
-    document.getElementById('guide-ponytail').classList.toggle('active', state.currentGuide === 'ponytail');
+    // Hair Types (Straight, Wavy, Curly, Kinky)
+    ['straight', 'wavy', 'curly', 'kinky'].forEach(type => {
+      const btn = document.getElementById(`guide-${type}`);
+      if (btn) {
+        btn.classList.toggle('active', state.currentGuide === type);
+      }
+    });
     
-    // Brush Preview
-    const previewDot = document.getElementById('brush-preview-dot');
-    const actualSize = getActualBrushSize();
-    previewDot.style.width = `${actualSize / 2}px`;
-    previewDot.style.height = `${actualSize / 2}px`;
-    previewDot.style.backgroundColor = state.currentTool === 'eraser' ? 'var(--canvas-bg)' : state.currentColor;
-    previewDot.style.border = state.currentTool === 'eraser' ? '1px solid var(--ui-border)' : 'none';
+    // Hair Textures
+    ['strands', 'silky', 'wavy', 'single'].forEach(texture => {
+      const btn = document.getElementById(`texture-${texture}`);
+      if (btn) {
+        btn.classList.toggle('active', state.hairTexture === texture);
+      }
+    });
+
+    // Brush Preview Canvas
+    drawBrushPreview();
 
     // Theme Toggle Icons
     const lightIcon = document.getElementById('theme-icon-light');
@@ -985,13 +1371,111 @@ document.addEventListener('DOMContentLoaded', () => {
     const dollBtn = document.getElementById('doll-toggle');
     dollBtn.querySelector('span').textContent = `Style ${state.dollStyle}`;
 
+    // Custom doll reset button
+    const hasCustomDoll = !!localStorage.getItem('custom_doll_image');
+    const resetDollBtn = document.getElementById('reset-doll-btn');
+    if (resetDollBtn) {
+      resetDollBtn.style.display = hasCustomDoll ? 'inline-flex' : 'none';
+    }
+
     // Mute Toggle
     document.getElementById('mute-icon').style.display = state.isMuted ? 'none' : 'block';
     document.getElementById('unmute-icon').style.display = state.isMuted ? 'block' : 'none';
 
     // Status strip
+    const typeLabel = state.currentGuide ? ` | Type: ${state.currentGuide.charAt(0).toUpperCase() + state.currentGuide.slice(1)}` : '';
     document.getElementById('status-strip').textContent =
-      `Tool: ${state.currentTool} | Color: ${state.currentColor} | Size: ${getActualBrushSize()}px | Mode: ${state.maskMode ? 'Hair Only' : 'Free Draw'}`;
+      `Tool: ${state.currentTool === 'eraser' ? 'Eraser' : 'Brush (' + state.hairTexture + ')'}${typeLabel} | Color: ${state.currentColor} | Size: ${Math.round(getActualBrushSize())}px | Mode: ${state.maskMode ? 'Hair Only' : 'Free Draw'}`;
+  }
+
+  function drawBrushPreview() {
+    const previewCanvas = document.getElementById('brush-preview-canvas');
+    if (!previewCanvas) return;
+    const pCtx = previewCanvas.getContext('2d');
+    pCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+
+    if (state.currentTool === 'eraser') {
+      const actualSize = getActualBrushSize();
+      const r = Math.max(3, Math.min(22, actualSize * 0.7));
+      pCtx.fillStyle = 'rgba(150, 150, 150, 0.2)';
+      pCtx.beginPath();
+      pCtx.arc(28, 28, r, 0, Math.PI * 2);
+      pCtx.fill();
+      pCtx.lineWidth = 1.5;
+      pCtx.strokeStyle = 'var(--text-light)';
+      pCtx.stroke();
+      return;
+    }
+
+    const sampleSize = getActualBrushSize();
+    const sampleStrands = generateStrands(sampleSize, state.hairTexture, state.currentColor);
+
+    // Soft underlying lock volume for realistic hair body
+    if (state.hairTexture !== 'single') {
+      const rgb = hexToRgb(state.currentColor);
+      pCtx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${state.hairTexture === 'silky' ? 0.35 : 0.2})`;
+      pCtx.lineWidth = Math.min(24, sampleSize * 0.75);
+      pCtx.lineCap = 'round';
+      pCtx.beginPath();
+      pCtx.moveTo(28, 8);
+      pCtx.bezierCurveTo(34, 22, 22, 34, 28, 48);
+      pCtx.stroke();
+    }
+
+    pCtx.lineCap = 'round';
+    for (let i = 0; i < sampleStrands.length; i++) {
+      const strand = sampleStrands[i];
+      const rgb = strand.rgb || hexToRgb(state.currentColor);
+
+      for (let s = 0; s < 16; s++) {
+        const t1 = s / 16;
+        const t2 = (s + 1) / 16;
+        const y1 = 8 + t1 * 40;
+        const y2 = 8 + t2 * 40;
+
+        let midCurve1 = 0;
+        let midCurve2 = 0;
+        if (state.currentGuide === 'straight') {
+          midCurve1 = 0;
+          midCurve2 = 0;
+        } else if (state.currentGuide === 'wavy' || (!state.currentGuide && state.hairTexture === 'wavy')) {
+          midCurve1 = Math.sin(t1 * Math.PI * 2.2) * 7;
+          midCurve2 = Math.sin(t2 * Math.PI * 2.2) * 7;
+        } else if (state.currentGuide === 'curly') {
+          midCurve1 = Math.cos(t1 * Math.PI * 3.5) * 6;
+          midCurve2 = Math.cos(t2 * Math.PI * 3.5) * 6;
+        } else if (state.currentGuide === 'kinky') {
+          const p1 = (t1 * 22) % (Math.PI * 2);
+          const p2 = (t2 * 22) % (Math.PI * 2);
+          midCurve1 = (Math.asin(Math.sin(p1)) / (Math.PI / 2)) * 5;
+          midCurve2 = (Math.asin(Math.sin(p2)) / (Math.PI / 2)) * 5;
+        } else {
+          midCurve1 = Math.sin(t1 * Math.PI) * 3;
+          midCurve2 = Math.sin(t2 * Math.PI) * 3;
+        }
+
+        // Taper strand offset and amplitude towards the end
+        const taperEnd1 = t1 > 0.55 ? Math.pow((1 - t1) / 0.45, 1.3) : 1;
+        const taperEnd2 = t2 > 0.55 ? Math.pow((1 - t2) / 0.45, 1.3) : 1;
+
+        const wobble1 = state.currentGuide === 'straight' ? 0 : Math.sin(t1 * 12 + strand.phase) * (strand.amp * 0.4) * taperEnd1;
+        const wobble2 = state.currentGuide === 'straight' ? 0 : Math.sin(t2 * 12 + strand.phase) * (strand.amp * 0.4) * taperEnd2;
+
+        const x1 = 28 + midCurve1 + strand.offset * Math.min(30, sampleSize * 0.9) * taperEnd1 + wobble1;
+        const x2 = 28 + midCurve2 + strand.offset * Math.min(30, sampleSize * 0.9) * taperEnd2 + wobble2;
+
+        // Taper strand width and fade alpha gradually to almost nothing at the end
+        const strandAlpha = (strand.baseAlpha || 0.8) * (t2 > 0.6 ? Math.pow((1 - t2) / 0.4, 1.5) : 1);
+        const strandWidth = Math.max(0.1, strand.width * (t2 > 0.55 ? Math.pow((1 - t2) / 0.45, 1.2) : 1));
+
+        pCtx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${strandAlpha.toFixed(2)})`;
+        pCtx.lineWidth = strandWidth;
+        pCtx.beginPath();
+        pCtx.moveTo(x1, y1);
+        pCtx.lineTo(x2, y2);
+        pCtx.stroke();
+      }
+    }
   }
 
   function setTool(tool) {
@@ -1063,6 +1547,8 @@ document.addEventListener('DOMContentLoaded', () => {
     displayCanvas.addEventListener('touchstart', beginStroke, { passive: false });
     displayCanvas.addEventListener('touchmove', extendStroke, { passive: false });
     document.addEventListener('touchend', endStroke);
+    document.addEventListener('touchcancel', endStroke);
+    window.addEventListener('blur', endStroke);
 
     // Tool selection
     document.getElementById('tool-brush').addEventListener('click', () => setTool('brush'));
@@ -1070,6 +1556,21 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('brush-small').addEventListener('click', () => setBrushSize('small'));
     document.getElementById('brush-medium').addEventListener('click', () => setBrushSize('medium'));
     document.getElementById('brush-large').addEventListener('click', () => setBrushSize('large'));
+
+    // Hair Texture Selection
+    ['strands', 'silky', 'wavy', 'single'].forEach(texture => {
+      const btn = document.getElementById(`texture-${texture}`);
+      if (btn) {
+        btn.addEventListener('click', () => {
+          state.hairTexture = texture;
+          if (state.currentTool !== 'brush') {
+            state.currentTool = 'brush';
+          }
+          updateUI();
+          audioSystem.play('click');
+        });
+      }
+    });
 
     // History
     document.getElementById('undo-btn').addEventListener('click', undo);
@@ -1096,14 +1597,86 @@ document.addEventListener('DOMContentLoaded', () => {
         audioSystem.play('click');
     });
 
-    // Style Guides
-    ['straight', 'curly', 'ponytail'].forEach(guide => {
-        document.getElementById(`guide-${guide}`).addEventListener('click', () => {
+    // Custom Doll Upload & Drag-and-Drop
+    const uploadDollBtn = document.getElementById('upload-doll-btn');
+    const dollFileInput = document.getElementById('doll-file-input');
+    const resetDollBtn = document.getElementById('reset-doll-btn');
+
+    if (uploadDollBtn && dollFileInput) {
+      uploadDollBtn.addEventListener('click', () => {
+        dollFileInput.click();
+      });
+
+      dollFileInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (event) => {
+            const dataUrl = event.target.result;
+            try {
+              localStorage.setItem('custom_doll_image', dataUrl);
+            } catch (err) {
+              console.warn('Could not save to localStorage', err);
+            }
+            dollImage.src = dataUrl;
+            updateUI();
+            audioSystem.play('click');
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+
+    if (resetDollBtn) {
+      resetDollBtn.addEventListener('click', () => {
+        localStorage.removeItem('custom_doll_image');
+        dollImage.src = './doll.png';
+        updateUI();
+        audioSystem.play('click');
+      });
+    }
+
+    // Drag and Drop custom doll onto canvas wrapper
+    const canvasWrapper = document.getElementById('canvas-wrapper');
+    if (canvasWrapper) {
+      canvasWrapper.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      });
+      canvasWrapper.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          const file = e.dataTransfer.files[0];
+          if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+              const dataUrl = event.target.result;
+              try {
+                localStorage.setItem('custom_doll_image', dataUrl);
+              } catch (err) {
+                console.warn('Could not save to localStorage', err);
+              }
+              dollImage.src = dataUrl;
+              updateUI();
+              audioSystem.play('click');
+            };
+            reader.readAsDataURL(file);
+          }
+        }
+      });
+    }
+
+    // Hair Types (Straight, Wavy, Curly, Kinky)
+    ['straight', 'wavy', 'curly', 'kinky'].forEach(guide => {
+        const btn = document.getElementById(`guide-${guide}`);
+        if (btn) {
+          btn.addEventListener('click', () => {
             state.currentGuide = state.currentGuide === guide ? null : guide;
             drawGuide(state.currentGuide);
             updateUI();
             audioSystem.play('click');
-        });
+          });
+        }
     });
 
     // Onboarding
