@@ -543,7 +543,7 @@
           <button id="guide-kinky" class="tool-btn" title="Kinky Hair (Type 4 - Tight Z-Pattern Coils)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5M12 3l3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5M18 3l3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5 3 1.5-3 1.5"/></svg><span>Kinky</span></button>
           <div class="divider"></div>
           <!-- Mask Toggle -->
-          <button id="mask-toggle" class="control-btn active" title="Toggle hair mask"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"></path></svg><span>Hair Only</span></button>
+          <button id="mask-toggle" class="control-btn active" title="Keep her face clear of paint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path><path d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zm0 8c-1.65 0-3-1.35-3-3s1.35-3 3-3 3 1.35 3 3-1.35 3-3 3z"></path></svg><span>Clear face</span></button>
           <!-- Doll Style Toggle -->
           <button id="doll-toggle" class="control-btn" title="Change doll style"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path><path d="M8 12h8"></path><path d="M12 8v8"></path></svg><span>Style A</span></button>
           <!-- Upload Doll Button -->
@@ -580,7 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
     brushSize: 16, // medium
     hairTexture: 'strands', // 'strands', 'silky', 'wavy', 'single'
     isDrawing: false,
-    maskMode: true, // true: 'Hair Only', false: 'Free Draw'
+    maskMode: true, // true: 'Clear face', false: 'Free Draw'
     dollStyle: 'A', // 'A' or 'B'
     isMuted: false,
     history: [],
@@ -939,13 +939,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Draw a very large rectangle covering the entire potential hair area
     maskCtx.fillRect(0, 0, w, h);
 
-    // 2. Use destination-out to erase the face area from the mask
+    // 2. Use destination-out to erase the face area from the mask.
+    // Only from just above the eyebrows down: the forehead above that line
+    // stays paintable so a fringe can be drawn over it. The eyebrows sit at
+    // y = 237 in the doll artwork.
+    const faceTopY = 225;
     maskCtx.globalCompositeOperation = 'destination-out';
-    
+
+    maskCtx.save();
+    maskCtx.beginPath();
+    maskCtx.rect(0, faceTopY, w, h - faceTopY);
+    maskCtx.clip();
     maskCtx.beginPath();
     maskCtx.ellipse(centerX, cy, 125, 160, 0, 0, Math.PI * 2);
     maskCtx.fill();
-    
+    maskCtx.restore();
+
     // 3. Reset composite operation for future drawing
     maskCtx.globalCompositeOperation = 'source-over';
   }
@@ -1632,7 +1641,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Mask Toggle
     const maskBtn = document.getElementById('mask-toggle');
     maskBtn.classList.toggle('active', state.maskMode);
-    maskBtn.querySelector('span').textContent = state.maskMode ? 'Hair Only' : 'Free Draw';
+    maskBtn.querySelector('span').textContent = state.maskMode ? 'Clear face' : 'Free Draw';
     
     // Doll Toggle
     const dollBtn = document.getElementById('doll-toggle');
@@ -1655,7 +1664,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Status strip
     const typeLabel = state.currentGuide ? ` | Type: ${state.currentGuide.charAt(0).toUpperCase() + state.currentGuide.slice(1)}` : '';
     document.getElementById('status-strip').textContent =
-      `Tool: ${state.currentTool === 'eraser' ? 'Eraser' : 'Brush (' + state.hairTexture + ')'}${typeLabel} | Color: ${state.currentColor} | Size: ${Math.round(getActualBrushSize())}px | Mode: ${state.maskMode ? 'Hair Only' : 'Free Draw'}`;
+      `Tool: ${state.currentTool === 'eraser' ? 'Eraser' : 'Brush (' + state.hairTexture + ')'}${typeLabel} | Color: ${state.currentColor} | Size: ${Math.round(getActualBrushSize())}px | Mode: ${state.maskMode ? 'Clear face' : 'Free Draw'}`;
   }
 
   function drawBrushPreview() {
